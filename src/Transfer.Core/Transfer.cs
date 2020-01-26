@@ -1,0 +1,74 @@
+using System;
+using System.Buffers;
+using System.IO;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+
+namespace Transfer.Core
+{
+    internal class Transfer
+    {
+        private const int _channelSize = 20;
+        private const int _bufferSize = 32768;
+
+        private readonly IReader _reader;
+        private readonly IWriter _writer;
+
+        public Transfer(IReader reader, IWriter writer)
+        {
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _writer = writer ?? throw new ArgumentNullException(nameof(writer));
+        }
+
+        public async Task TransferDataAsync(IProgress<double> progress = null, CancellationToken token = default)
+        {
+            var channel = Channel.CreateBounded<(IMemoryOwner<byte>, int)>(new BoundedChannelOptions(_channelSize)
+            {
+                SingleReader = true,
+                SingleWriter = true
+            });
+
+            var source = await _reader.GetSourceStreamInfoAsync();
+            using (source.Stream)
+            using (var destStream = await _writer.GetDestinationStreamAsync())
+            {
+                var reading = ReadAllAsync(channel.Reader, destStream, source.Length, progress, token)
+                    .ConfigureAwait(false);
+
+                int read;
+                IMemoryOwner<byte> owner;
+                while ((read = await source.Stream.ReadAsync(
+                    (owner = MemoryPool<byte>.Shared.Rent(_bufferSize)).Memory, token).ConfigureAwait(false)) > 0)
+                        await channel.Writer.WriteAsync((owner, read), token).ConfigureAwait(false);
+
+                channel.Writer.Complete();
+                await reading;
+            }
+        }
+
+        private async Task ReadAllAsync(ChannelReader<(IMemoryOwner<byte> owner, int read)> reader,
+            Stream destStream, double sourceLength, IProgress<double> progress, CancellationToken token)
+        {
+            double totalRead = 0;
+            while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
+                while (reader.TryRead(out var pair))
+                {
+                    try
+                    {
+                        var memory = pair.owner.Memory.Length == pair.read
+                            ? pair.owner.Memory
+                            : pair.owner.Memory.Slice(0, pair.read);
+
+                        await destStream.WriteAsync(memory, token).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        pair.owner.Dispose();
+                    }
+
+                    progress?.Report((totalRead += pair.read) / sourceLength);
+                }
+        }
+    }
+}
