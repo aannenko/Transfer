@@ -48,23 +48,24 @@ namespace Transfer.Core
             }
         }
 
-        private async Task ReadAllAsync(ChannelReader<(IMemoryOwner<byte> owner, int read)> reader,
+        private async Task ReadAllAsync(ChannelReader<(IMemoryOwner<byte>, int)> reader,
             Stream destStream, double sourceLength, IProgress<double> progress, CancellationToken token)
         {
             double totalRead = 0;
             while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
                 while (reader.TryRead(out var pair))
                 {
-                    using (pair.owner)
+                    var (owner, read) = pair;
+                    using (owner)
                     {
-                        var memory = pair.owner.Memory.Length == pair.read
-                            ? pair.owner.Memory
-                            : pair.owner.Memory.Slice(0, pair.read);
+                        var memory = owner.Memory.Length == read
+                            ? owner.Memory
+                            : owner.Memory.Slice(0, read);
 
                         await destStream.WriteAsync(memory, token).ConfigureAwait(false);
                     }
 
-                    progress?.Report((totalRead += pair.read) / sourceLength);
+                    progress?.Report((totalRead += read) / sourceLength);
                 }
         }
     }
