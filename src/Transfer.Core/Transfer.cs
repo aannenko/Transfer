@@ -55,17 +55,13 @@ namespace Transfer.Core
             while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
                 while (reader.TryRead(out var pair))
                 {
-                    try
+                    using (pair.owner)
                     {
                         var memory = pair.owner.Memory.Length == pair.read
                             ? pair.owner.Memory
                             : pair.owner.Memory.Slice(0, pair.read);
 
                         await destStream.WriteAsync(memory, token).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        pair.owner.Dispose();
                     }
 
                     progress?.Report((totalRead += pair.read) / sourceLength);
