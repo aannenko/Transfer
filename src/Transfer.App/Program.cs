@@ -104,7 +104,6 @@ namespace Transfer.App
                 try
                 {
                     _logger.Info($"Starting transfer {transferNumber} {transfer.Description}.");
-                    await Task.Delay(5000);
                     await task;
                     _logger.Info($"Transfer {transferNumber} {transfer.Description} complete.");
                 }
