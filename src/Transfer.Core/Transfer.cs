@@ -9,8 +9,13 @@ namespace Transfer.Core
 {
     internal class Transfer
     {
-        private const int _channelSize = 20;
         private const int _bufferSize = 32768;
+
+        private static readonly BoundedChannelOptions _channelOptions = new BoundedChannelOptions(20)
+        {
+            SingleReader = true,
+            SingleWriter = true
+        };
 
         private readonly IReader _reader;
         private readonly IWriter _writer;
@@ -23,11 +28,7 @@ namespace Transfer.Core
 
         public async Task TransferDataAsync(IProgress<double> progress = null, CancellationToken token = default)
         {
-            var channel = Channel.CreateBounded<(IMemoryOwner<byte>, int)>(new BoundedChannelOptions(_channelSize)
-            {
-                SingleReader = true,
-                SingleWriter = true
-            });
+            var channel = Channel.CreateBounded<(IMemoryOwner<byte>, int)>(_channelOptions);
 
             var source = await _reader.GetSourceStreamInfoAsync();
             using (source.Stream)
