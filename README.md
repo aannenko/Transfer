@@ -12,7 +12,7 @@ The repository contains source code for three projects:
 ### Usage
 You will need [.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) installed.
 
-`cd` to the Transfer.App directory, run `dotnet run -c Release` and follow the instructions in the output.
+`cd` to the Transfer.App directory, run `dotnet run` and follow the instructions in the output.
 
 ### Remarks
 The application uses a notion of reader/writer for data transfers; each transfer requires one reader and one writer. Readers and writers work with a type [`Stream`](https://docs.microsoft.com/en-us/dotnet/api/system.io.stream) (readers produce streams, writers consume them) so in theory you could create readers and writers for any stream-compatible data and try combining them in the most crazy ways you can imagine. There's no guarantee that such transfers will succeed though. In the meantime, you can find a reader and a writer for local files and also a reader and a writer for files located on FTP in the project [Transfer.Datasource](https://github.com/aannenko/Transfer/tree/master/src/Transfer.Datasource).
