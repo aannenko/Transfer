@@ -120,8 +120,7 @@ namespace Transfer.App
 
             var spinningTask = (await getSpinnerTask).SpinUntilAsync(transferTask);
 
-            var sWatch = new Stopwatch();
-            sWatch.Start();
+            var sWatch = Stopwatch.StartNew();
             await Task.WhenAll(spinningTask, transferTask);
             sWatch.Stop();
 
