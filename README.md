@@ -1,7 +1,7 @@
 [![Build](https://github.com/aannenko/Transfer/workflows/Build/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions)
 
 # Transfer
-Use code in this repository to build and run .NET Core console application that is able to transfer data from one place to the other with a pre-set level of concurrency.
+Use code in this repository to build and run .NET Core console application that is able to transfer data from one place to the other with a configurable level of concurrency.
 
 ### Contents
 The repository contains source code for three projects:
