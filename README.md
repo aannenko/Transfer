@@ -1,4 +1,4 @@
-[![Build](https://github.com/aannenko/Transfer/workflows/Build/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions)
+[![Build](https://github.com/aannenko/Transfer/workflows/Build/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions?query=workflow%3ABuild) [![CodeQL](https://github.com/aannenko/Transfer/workflows/CodeQL/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions?query=workflow%3ACodeQL)
 
 # Transfer
 Use code in this repository to build and run .NET Core console application that is able to transfer data from one place to the other with a configurable level of concurrency.
