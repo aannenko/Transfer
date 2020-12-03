@@ -13,14 +13,13 @@ namespace Transfer.Datasource.Files
         {
             _destinationPath = string.IsNullOrWhiteSpace(destinationPath)
                 ? throw new ArgumentException("Destination path cannot be null, empty or whitespace.", nameof(destinationPath))
-                : destinationPath;
+                : Path.GetFullPath(destinationPath);
         }
 
         public Task<Stream> GetDestinationStreamAsync()
         {
-            var fullPath = Path.GetFullPath(_destinationPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-            return Task.FromResult(File.Create(fullPath) as Stream);
+            Directory.CreateDirectory(Path.GetDirectoryName(_destinationPath));
+            return Task.FromResult(File.Create(_destinationPath) as Stream);
         }
     }
 }
