@@ -1,7 +1,7 @@
 [![Build](https://github.com/aannenko/Transfer/workflows/Build/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions?query=workflow%3ABuild) [![CodeQL](https://github.com/aannenko/Transfer/workflows/CodeQL/badge.svg?branch=master)](https://github.com/aannenko/Transfer/actions?query=workflow%3ACodeQL)
 
 # Transfer
-Use code in this repository to build and run .NET Core console application that is able to transfer data from one place to the other with a configurable level of concurrency.
+Use code in this repository to build and run .NET Core console application that is able to efficiently transfer data from one place to the other with a configurable level of concurrency.
 
 ### Contents
 The repository contains source code for three projects:
@@ -10,7 +10,7 @@ The repository contains source code for three projects:
 - [Transfer.Datasource](https://github.com/aannenko/Transfer/tree/master/src/Transfer.Datasource) describes specific data readers and writers
 
 ### Usage
-You will need [.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1) installed.
+You will need [.NET Core SDK](https://dotnet.microsoft.com/download/dotnet/5.0) installed.
 
 `cd` to the Transfer.App directory, run `dotnet run` and follow the instructions in the output.
 
