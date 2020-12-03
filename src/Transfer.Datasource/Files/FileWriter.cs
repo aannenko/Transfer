@@ -16,7 +16,11 @@ namespace Transfer.Datasource.Files
                 : destinationPath;
         }
 
-        public Task<Stream> GetDestinationStreamAsync() =>
-            Task.FromResult(File.Create(_destinationPath) as Stream);
+        public Task<Stream> GetDestinationStreamAsync()
+        {
+            var fullPath = Path.GetFullPath(_destinationPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            return Task.FromResult(File.Create(fullPath) as Stream);
+        }
     }
 }
