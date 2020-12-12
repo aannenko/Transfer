@@ -17,7 +17,6 @@ namespace Transfer.App.Tools
         private static readonly TimeSpan _defaultDelay = TimeSpan.FromMilliseconds(100);
 
         private readonly string[] _sequence;
-        private readonly string[] _emptyLineParts;
         private readonly TimeSpan _delay;
 
         private Spinner(IEnumerable<string> sequence, TimeSpan delay)
@@ -26,14 +25,12 @@ namespace Transfer.App.Tools
                 ? _defaultSequence
                 : sequence.ToArray();
 
-            _emptyLineParts = new string[_sequence.Length];
             var maxSeqLength = _sequence.Max(s => s.Length);
             for (int i = 0; i < _sequence.Length; i++)
             {
                 var lengthDiff = maxSeqLength - _sequence[i].Length;
-                _emptyLineParts[i] = lengthDiff > 0
-                    ? new string(' ', lengthDiff)
-                    : string.Empty;
+                if (lengthDiff > 0)
+                    _sequence[i] += new string(' ', lengthDiff);
             }
 
             _delay = delay > _minDelay
@@ -41,7 +38,7 @@ namespace Transfer.App.Tools
                 : _minDelay;
         }
 
-        public static Task<Spinner> GetSpinnerAsync(IEnumerable<string> sequence, TimeSpan delay) =>
+        public static Task<Spinner> GetSpinnerAsync(IEnumerable<string> sequence, TimeSpan delay = default) =>
             Task.Run(() => new Spinner(sequence, delay));
 
         public static Task<Spinner> GetSpinnerAsync(params string[] sequence) =>
@@ -55,7 +52,7 @@ namespace Transfer.App.Tools
                     return;
 
                 Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Write($"{_sequence[i] + _emptyLineParts[i]}\r");
+                Console.Write($"{_sequence[i]}\r");
                 await Task.Delay(_delay);
 
                 if (i == _sequence.Length - 1)
