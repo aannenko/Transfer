@@ -12,10 +12,11 @@ using Transfer.Core;
 using Transfer.Datasource.Files;
 using Transfer.Datasource.Ftp;
 
-ILog logger = new ConsoleLogger();
-JsonFileSerializer<Data> serializer = new JsonFileSerializer<Data>(logger);
-string dataFilePath = Path.GetFullPath("Transfers.json");
-Lazy<Data> sampleData = new Lazy<Data>(() => new Data
+var logger = new ConsoleLogger();
+var serializer = new JsonFileSerializer<Data>(logger);
+var dataFilePath = Path.GetFullPath("Transfers.json");
+var cancellation = new CancellationTokenSource();
+var sampleData = new Lazy<Data>(() => new Data
 {
     Files = new[]
     {
@@ -27,24 +28,55 @@ Lazy<Data> sampleData = new Lazy<Data>(() => new Data
     Proxy = "http://optional.proxy"
 });
 
+Console.CancelKeyPress += (sender, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    cancellation.Cancel();
+};
+
 logger.Info($"Looking for '{dataFilePath}' file.");
-var deserializationResult = await serializer.TryDeserializeAsync(dataFilePath);
-if (deserializationResult.IsSuccessful && TryConvertDataToTransferInfo(deserializationResult.Data, out List<TransferInfo> info))
+Data data = null;
+try
+{
+    data = await serializer.DeserializeAsync(dataFilePath, cancellation.Token);
+}
+catch (OperationCanceledException)
+{
+    logger.Warn($"Reading file '{dataFilePath}' cancelled.");
+}
+catch (Exception e)
+{
+    logger.Warn($"File '{dataFilePath}' not found or invalid: {e.Message}");
+}
+
+if (data is not null && TryConvertDataToTransferInfo(data, out List<TransferInfo> info))
 {
     logger.Info($"Initializing transfers for {info.Count} files.");
     await Transfer(info);
     logger.Info("Transfer complete.");
 }
-else
+else if (!cancellation.IsCancellationRequested)
 {
-    logger.Warn($"'{dataFilePath}' file not found or invalid.");
     logger.Info($"Creating file '{dataFilePath}' with sample transfer details; please fill it with proper details.");
-    if (!(await serializer.TrySerializeAsync(sampleData.Value, dataFilePath)))
-        logger.Error($"Cannot create file '{dataFilePath}'.");
+    try
+    {
+        await serializer.SerializeAsync(sampleData.Value, dataFilePath, cancellation.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        logger.Warn($"Writing file '{dataFilePath} cancelled.'");
+    }
+    catch (Exception e)
+    {
+        logger.Error($"Could not create file '{dataFilePath}': {e.Message}");
+    }
 }
 
-logger.Info("Press any key to exit...");
-Console.ReadKey();
+if (Environment.UserInteractive)
+{
+    logger.Info("Press any key to exit...");
+    Console.ReadKey();
+}
 
 bool TryConvertDataToTransferInfo(Data data, out List<TransferInfo> info)
 {
@@ -59,7 +91,7 @@ bool TryConvertDataToTransferInfo(Data data, out List<TransferInfo> info)
         try
         {
             info.Add(registry.GetTransferInfo(file.Source, file.Destination,
-                $"from '{file.Source}' to '{file.Destination}'", new Progress<double>()));
+                $"from '{file.Source}' to '{file.Destination}'", new Progress<double>(), cancellation.Token));
         }
         catch (Exception e)
         {
@@ -69,6 +101,24 @@ bool TryConvertDataToTransferInfo(Data data, out List<TransferInfo> info)
     }
 
     return !dataContainsErrors;
+}
+
+static ReaderWriterRegistry BuildRegistry()
+{
+    var registry = new ReaderWriterRegistry();
+
+    registry.RegisterReader<string>(_ => true, path => new FileReader(path));
+    registry.RegisterWriter<string>(_ => true, path => new FileWriter(path));
+
+    registry.RegisterReader<string>(
+        path => path.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase),
+        path => new FtpReader(new Uri(path), null, null));
+
+    registry.RegisterWriter<string>(
+        path => path.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase),
+        path => new FtpWriter(new Uri(path), null, null));
+
+    return registry;
 }
 
 async Task Transfer(IEnumerable<TransferInfo> info)
@@ -104,22 +154,4 @@ async Task Transfer(IEnumerable<TransferInfo> info)
     sWatch.Stop();
 
     logger.Info($"Transfer took {sWatch.Elapsed}.");
-}
-
-static ReaderWriterRegistry BuildRegistry()
-{
-    var registry = new ReaderWriterRegistry();
-
-    registry.RegisterReader<string>(_ => true, path => new FileReader(path));
-    registry.RegisterWriter<string>(_ => true, path => new FileWriter(path));
-
-    registry.RegisterReader<string>(
-        path => path.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase),
-        path => new FtpReader(new Uri(path), null, null));
-
-    registry.RegisterWriter<string>(
-        path => path.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase),
-        path => new FtpWriter(new Uri(path), null, null));
-
-    return registry;
 }
