@@ -32,7 +32,7 @@ namespace Transfer.Core
 
                 var transferTask = ti.Transfer.TransferDataAsync(ti.Progress, ti.Token);
                 var handlerTask = handler == null
-                    ? Task.FromResult(true)
+                    ? Task.CompletedTask
                     : handler(transferTask, ti);
 
                 var task = Task.WhenAll(transferTask, handlerTask);
