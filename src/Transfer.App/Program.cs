@@ -52,7 +52,7 @@ if (Environment.UserInteractive)
 
 async Task<Data> ReadDataAsync()
 {
-    logger.Info($"Attempting to read '{dataFilePath}' file.");
+    logger.Info($"Reading '{dataFilePath}' file.");
     Data data = null;
     try
     {
@@ -79,11 +79,11 @@ async Task WriteDataAsync()
     }
     catch (OperationCanceledException)
     {
-        logger.Warn($"Writing file '{dataFilePath} cancelled.'");
+        logger.Warn($"Writing file '{dataFilePath}' cancelled.'");
     }
     catch (Exception e)
     {
-        logger.Error($"Could not create file '{dataFilePath}': {e.Message}");
+        logger.Error($"File '{dataFilePath}' cannot be written: {e.Message}");
     }
 }
 
