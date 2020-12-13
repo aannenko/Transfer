@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Transfer.App.Tools
 {
-    internal class Spinner
+    internal class AsyncSpinner
     {
         private static readonly string[] _defaultSequence = new[]
         {
@@ -19,7 +19,7 @@ namespace Transfer.App.Tools
         private readonly string[] _sequence;
         private readonly TimeSpan _delay;
 
-        private Spinner(IEnumerable<string> sequence, TimeSpan delay)
+        private AsyncSpinner(IEnumerable<string> sequence, TimeSpan delay)
         {
             _sequence = sequence == null || !sequence.Any()
                 ? _defaultSequence
@@ -38,10 +38,10 @@ namespace Transfer.App.Tools
                 : _minDelay;
         }
 
-        public static Task<Spinner> GetSpinnerAsync(IEnumerable<string> sequence, TimeSpan delay = default) =>
-            Task.Run(() => new Spinner(sequence, delay));
+        public static Task<AsyncSpinner> GetSpinnerAsync(IEnumerable<string> sequence, TimeSpan delay = default) =>
+            Task.Run(() => new AsyncSpinner(sequence, delay));
 
-        public static Task<Spinner> GetSpinnerAsync(params string[] sequence) =>
+        public static Task<AsyncSpinner> GetSpinnerAsync(params string[] sequence) =>
             GetSpinnerAsync(sequence, _defaultDelay);
 
         public async Task SpinUntilAsync(Task task)

@@ -1,19 +1,12 @@
-using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Transfer.App.Logging;
 
 namespace Transfer.App.Serialization
 {
     internal class JsonFileSerializer<T>
     {
-        private readonly ILog _logger;
-
-        public JsonFileSerializer(ILog logger) =>
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
         public async Task SerializeAsync(T data, string filePath,
             CancellationToken cancellationToken = default)
         {

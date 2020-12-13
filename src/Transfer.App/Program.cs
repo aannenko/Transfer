@@ -13,9 +13,9 @@ using Transfer.Datasource.Files;
 using Transfer.Datasource.Ftp;
 
 var logger = new ConsoleLogger();
-var serializer = new JsonFileSerializer<Data>(logger);
-var dataFilePath = Path.GetFullPath("Transfers.json");
+var serializer = new JsonFileSerializer<Data>();
 var cancellation = new CancellationTokenSource();
+var dataFilePath = Path.GetFullPath("Transfers.json");
 var sampleData = new Lazy<Data>(() => new Data
 {
     Files = new[]
@@ -34,21 +34,7 @@ Console.CancelKeyPress += (sender, eventArgs) =>
     cancellation.Cancel();
 };
 
-logger.Info($"Looking for '{dataFilePath}' file.");
-Data data = null;
-try
-{
-    data = await serializer.DeserializeAsync(dataFilePath, cancellation.Token);
-}
-catch (OperationCanceledException)
-{
-    logger.Warn($"Reading file '{dataFilePath}' cancelled.");
-}
-catch (Exception e)
-{
-    logger.Warn($"File '{dataFilePath}' not found or invalid: {e.Message}");
-}
-
+Data data = await ReadDataAsync();
 if (data is not null && TryConvertDataToTransferInfo(data, out List<TransferInfo> info))
 {
     logger.Info($"Initializing transfers for {info.Count} files.");
@@ -56,6 +42,35 @@ if (data is not null && TryConvertDataToTransferInfo(data, out List<TransferInfo
     logger.Info("Transfer complete.");
 }
 else if (!cancellation.IsCancellationRequested)
+    await WriteDataAsync();
+
+if (Environment.UserInteractive)
+{
+    logger.Info("Press any key to exit...");
+    Console.ReadKey();
+}
+
+async Task<Data> ReadDataAsync()
+{
+    logger.Info($"Attempting to read '{dataFilePath}' file.");
+    Data data = null;
+    try
+    {
+        data = await serializer.DeserializeAsync(dataFilePath, cancellation.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        logger.Warn($"Reading file '{dataFilePath}' cancelled.");
+    }
+    catch (Exception e)
+    {
+        logger.Warn($"File '{dataFilePath}' not found or invalid: {e.Message}");
+    }
+
+    return data;
+}
+
+async Task WriteDataAsync()
 {
     logger.Info($"Creating file '{dataFilePath}' with sample transfer details; please fill it with proper details.");
     try
@@ -70,12 +85,6 @@ else if (!cancellation.IsCancellationRequested)
     {
         logger.Error($"Could not create file '{dataFilePath}': {e.Message}");
     }
-}
-
-if (Environment.UserInteractive)
-{
-    logger.Info("Press any key to exit...");
-    Console.ReadKey();
 }
 
 bool TryConvertDataToTransferInfo(Data data, out List<TransferInfo> info)
@@ -123,8 +132,10 @@ static ReaderWriterRegistry BuildRegistry()
 
 async Task Transfer(IEnumerable<TransferInfo> info)
 {
-    var getSpinnerTask = Spinner.GetSpinnerAsync();
+    var getSpinnerTask = AsyncSpinner.GetSpinnerAsync();
     var client = new TransferManager(Environment.ProcessorCount);
+
+    var sWatch = Stopwatch.StartNew();
 
     int transfersStarted = 0;
     var transferTask = client.TransferDataAsync(info, async (task, transfer) =>
@@ -148,9 +159,8 @@ async Task Transfer(IEnumerable<TransferInfo> info)
     });
 
     var spinningTask = (await getSpinnerTask).SpinUntilAsync(transferTask);
-
-    var sWatch = Stopwatch.StartNew();
     await Task.WhenAll(spinningTask, transferTask);
+
     sWatch.Stop();
 
     logger.Info($"Transfer took {sWatch.Elapsed}.");
