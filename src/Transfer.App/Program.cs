@@ -137,12 +137,12 @@ static ReaderWriterRegistry BuildRegistry()
 async Task Transfer(IEnumerable<TransferInfo> info)
 {
     var getSpinnerTask = AsyncSpinner.GetSpinnerAsync();
-    var client = new TransferManager(Environment.ProcessorCount);
+    var manager = new TransferManager(Environment.ProcessorCount);
 
     var sWatch = Stopwatch.StartNew();
 
     int transfersStarted = 0;
-    var transferTask = client.TransferDataAsync(info, async (task, transfer) =>
+    var transferTask = manager.TransferDataAsync(info, async (task, transfer) =>
     {
         var transferNumber = Interlocked.Increment(ref transfersStarted);
         try
