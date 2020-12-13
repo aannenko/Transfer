@@ -43,11 +43,11 @@ Data data = await ReadDataAsync();
 if (data is not null && TryConvertDataToTransferInfo(data, out List<TransferInfo> info))
 {
     logger.Info($"Initializing transfers for {info.Count} files.");
-    await Transfer(info);
+    await TransferAsync(info);
     logger.Info("Transfer complete.");
 }
 else if (!cancellation.IsCancellationRequested)
-    await WriteDataAsync();
+    await WriteSampleDataAsync();
 
 if (Environment.UserInteractive)
 {
@@ -74,7 +74,7 @@ async Task<Data> ReadDataAsync()
     return null;
 }
 
-async Task WriteDataAsync()
+async Task WriteSampleDataAsync()
 {
     logger.Info($"Creating file '{dataFilePath}' with sample transfer details; please fill it with proper details.");
     try
@@ -134,7 +134,7 @@ static ReaderWriterRegistry BuildRegistry()
     return registry;
 }
 
-async Task Transfer(IEnumerable<TransferInfo> info)
+async Task TransferAsync(IEnumerable<TransferInfo> info)
 {
     var getSpinnerTask = AsyncSpinner.GetSpinnerAsync();
     var manager = new TransferManager(Environment.ProcessorCount);
