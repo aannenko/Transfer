@@ -28,6 +28,11 @@ var sampleData = new Lazy<Data>(() => new Data
     Proxy = "http://optional.proxy"
 });
 
+AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
+{
+    cancellation.Cancel();
+};
+
 Console.CancelKeyPress += (sender, eventArgs) =>
 {
     eventArgs.Cancel = true;
