@@ -53,10 +53,9 @@ if (Environment.UserInteractive)
 async Task<Data> ReadDataAsync()
 {
     logger.Info($"Reading '{dataFilePath}' file.");
-    Data data = null;
     try
     {
-        data = await serializer.DeserializeAsync(dataFilePath, cancellation.Token);
+        return await serializer.DeserializeAsync(dataFilePath, cancellation.Token);
     }
     catch (OperationCanceledException)
     {
@@ -67,7 +66,7 @@ async Task<Data> ReadDataAsync()
         logger.Warn($"File '{dataFilePath}' not found or invalid: {e.Message}");
     }
 
-    return data;
+    return null;
 }
 
 async Task WriteDataAsync()
@@ -163,5 +162,5 @@ async Task Transfer(IEnumerable<TransferInfo> info)
 
     sWatch.Stop();
 
-    logger.Info($"Transfer took {sWatch.Elapsed}.");
+    logger.Info($"Transfers took {sWatch.Elapsed}.");
 }
