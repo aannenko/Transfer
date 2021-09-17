@@ -39,6 +39,7 @@ namespace Transfer.Core
 
                 int read;
                 IMemoryOwner<byte> owner;
+                
                 while ((read = await source.Stream.ReadAsync(
                     (owner = MemoryPool<byte>.Shared.Rent(_bufferSize)).Memory, token).ConfigureAwait(false)) > 0)
                         await channel.Writer.WriteAsync((owner, read), token).ConfigureAwait(false);
@@ -52,21 +53,19 @@ namespace Transfer.Core
             Stream destStream, double sourceLength, IProgress<double> progress, CancellationToken token)
         {
             double totalRead = 0;
-            while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
-                while (reader.TryRead(out var pair))
+            await foreach (var (owner, read) in reader.ReadAllAsync(token))
+            {
+                using (owner)
                 {
-                    var (owner, read) = pair;
-                    using (owner)
-                    {
-                        var memory = owner.Memory.Length == read
-                            ? owner.Memory
-                            : owner.Memory.Slice(0, read);
+                    var memory = owner.Memory.Length == read
+                        ? owner.Memory
+                        : owner.Memory.Slice(0, read);
 
-                        await destStream.WriteAsync(memory, token).ConfigureAwait(false);
-                    }
-
-                    progress?.Report((totalRead += read) / sourceLength);
+                    await destStream.WriteAsync(memory, token).ConfigureAwait(false);
                 }
+
+                progress?.Report((totalRead += read) / sourceLength);
+            }
         }
     }
 }
