@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Transfer.Core
 {
-    public class TransferManager
+    public class TransferService
     {
-        private readonly SemaphoreSlim _mutex;
+        private readonly SemaphoreSlim _semaphore;
 
-        public TransferManager(int maxConcurrentTransfers)
+        public TransferService(int maxConcurrentTransfers)
         {
-            _mutex = maxConcurrentTransfers > 0
+            _semaphore = maxConcurrentTransfers > 0
                 ? new SemaphoreSlim(maxConcurrentTransfers)
                 : throw new ArgumentOutOfRangeException(nameof(maxConcurrentTransfers),
                     maxConcurrentTransfers, "Value cannot be less than 1.");
@@ -28,7 +28,7 @@ namespace Transfer.Core
 
             return Task.WhenAll(transfers.Select(async ti =>
             {
-                await _mutex.WaitAsync().ConfigureAwait(false);
+                await _semaphore.WaitAsync().ConfigureAwait(false);
 
                 var transferTask = ti.Transfer.TransferDataAsync(ti.Progress, ti.Token);
                 var handlerTask = handler == null
@@ -49,7 +49,7 @@ namespace Transfer.Core
                 }
                 finally
                 {
-                    _mutex.Release();
+                    _semaphore.Release();
                 }
             }));
         }

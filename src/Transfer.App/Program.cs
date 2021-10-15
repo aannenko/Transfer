@@ -23,7 +23,7 @@ var sampleData = new Lazy<Data>(() => new Data
         ("ftp://ftp.uconn.edu/48_hour/file1.txt", @"C:\Downloads\file1.txt"),
         ("ftp://ftp.uconn.edu/48_hour/file2.txt", @"C:\Downloads\file2.txt")
     },
-    UserName = "anonymous",
+    UserName = "anonymous", 
     Password = "some@email.com",
     Proxy = "http://optional.proxy"
 });
@@ -40,9 +40,9 @@ Console.CancelKeyPress += (sender, eventArgs) =>
 };
 
 Data data = await ReadDataAsync();
-if (data is not null && TryConvertDataToTransferInfo(data, out List<TransferInfo> info))
+if (data is not null && TryConvertDataToTransferInfo(data, out var info))
 {
-    logger.Info($"Initializing transfers for {info.Count} files.");
+    logger.Info($"Initializing transfers for {info.Length} files.");
     await TransferAsync(info);
     logger.Info("Transfer complete.");
 }
@@ -91,27 +91,28 @@ async Task WriteSampleDataAsync()
     }
 }
 
-bool TryConvertDataToTransferInfo(Data data, out List<TransferInfo> info)
+bool TryConvertDataToTransferInfo(Data data, out TransferInfo[] info)
 {
-    info = new List<TransferInfo>();
+    info = null;
     if (data?.Files == null || data.Files.Any(f => f.Source == null || f.Destination == null))
         return false;
 
     var registry = BuildRegistry();
     bool dataContainsErrors = false;
-    foreach (var file in data.Files)
+    info = data.Files.Select(file =>
     {
         try
         {
-            info.Add(registry.GetTransferInfo(file.Source, file.Destination,
-                $"from '{file.Source}' to '{file.Destination}'", new Progress<double>(), cancellation.Token));
+            return registry.GetTransferInfo(file.Source, file.Destination,
+                $"from '{file.Source}' to '{file.Destination}'", new Progress<double>(), cancellation.Token);
         }
         catch (Exception e)
         {
             dataContainsErrors = true;
             logger.Error(e.Message);
+            return null;
         }
-    }
+    }).Where(i => i != null).ToArray();
 
     return !dataContainsErrors;
 }
@@ -137,12 +138,12 @@ static ReaderWriterRegistry BuildRegistry()
 async Task TransferAsync(IEnumerable<TransferInfo> info)
 {
     var getSpinnerTask = AsyncSpinner.GetSpinnerAsync();
-    var manager = new TransferManager(Environment.ProcessorCount);
+    var transferService = new TransferService(Environment.ProcessorCount);
 
     var sWatch = Stopwatch.StartNew();
 
     int transfersStarted = 0;
-    var transferTask = manager.TransferDataAsync(info, async (task, transfer) =>
+    var transferTask = transferService.TransferDataAsync(info, async (task, transfer) =>
     {
         var transferNumber = Interlocked.Increment(ref transfersStarted);
         try
@@ -158,7 +159,7 @@ async Task TransferAsync(IEnumerable<TransferInfo> info)
         catch (Exception e)
         {
             logger.Error($"Transfer {transferNumber} {transfer.Description} failed." +
-                $"{Environment.NewLine}Error message: {Environment.NewLine + e.Message}");
+                $"{Environment.NewLine}Error message:{Environment.NewLine}{e.Message}");
         }
     });
 
