@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Transfer.App.Logging;
 using Transfer.App.Serialization;
 using Transfer.App.Tools;
@@ -13,17 +7,17 @@ using Transfer.Datasource.Files;
 using Transfer.Datasource.Ftp;
 
 var logger = new ConsoleLogger();
-var serializer = new JsonFileSerializer<Data>();
+var serializer = new JsonFileSerializer<TransferDto>();
 var cancellation = new CancellationTokenSource();
 var dataFilePath = Path.GetFullPath("Transfers.json");
-var sampleData = new Lazy<Data>(() => new Data
+var sampleData = new Lazy<TransferDto>(() => new TransferDto
 {
     Files = new[]
     {
         ("ftp://ftp.uconn.edu/48_hour/file1.txt", @"C:\Downloads\file1.txt"),
         ("ftp://ftp.uconn.edu/48_hour/file2.txt", @"C:\Downloads\file2.txt")
     },
-    UserName = "anonymous", 
+    UserName = "anonymous",
     Password = "some@email.com",
     Proxy = "http://optional.proxy"
 });
@@ -39,7 +33,7 @@ Console.CancelKeyPress += (sender, eventArgs) =>
     cancellation.Cancel();
 };
 
-Data data = await ReadDataAsync();
+TransferDto? data = await ReadDataAsync();
 if (data is not null && TryConvertDataToTransferInfo(data, out var info))
 {
     logger.Info($"Initializing transfers for {info.Length} files.");
@@ -55,7 +49,7 @@ if (Environment.UserInteractive)
     Console.ReadKey();
 }
 
-async Task<Data> ReadDataAsync()
+async Task<TransferDto?> ReadDataAsync()
 {
     logger.Info($"Reading '{dataFilePath}' file.");
     try
@@ -91,9 +85,9 @@ async Task WriteSampleDataAsync()
     }
 }
 
-bool TryConvertDataToTransferInfo(Data data, out TransferInfo[] info)
+bool TryConvertDataToTransferInfo(TransferDto data, out TransferInfo[] info)
 {
-    info = null;
+    info = Array.Empty<TransferInfo>();
     if (data?.Files == null || data.Files.Any(f => f.Source == null || f.Destination == null))
         return false;
 
@@ -112,7 +106,7 @@ bool TryConvertDataToTransferInfo(Data data, out TransferInfo[] info)
             logger.Error(e.Message);
             return null;
         }
-    }).Where(i => i != null).ToArray();
+    }).Where(i => i != null).ToArray()!;
 
     return !dataContainsErrors;
 }

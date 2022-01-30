@@ -1,11 +1,10 @@
-namespace Transfer.App.Logging
+namespace Transfer.App.Logging;
+
+public interface ILog
 {
-    public interface ILog
-    {
-        void Info(string message);
+    void Info(string message);
 
-        void Warn(string message);
+    void Warn(string message);
 
-        void Error(string message);
-    }
+    void Error(string message);
 }

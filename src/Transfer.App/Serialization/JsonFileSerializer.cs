@@ -1,7 +1,4 @@
-using System.IO;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Transfer.App.Serialization
 {
@@ -16,11 +13,11 @@ namespace Transfer.App.Serialization
         public async Task SerializeAsync(T data, string filePath, CancellationToken cancellationToken = default)
         {
             using var stream = File.Create(filePath);
-            await JsonSerializer.SerializeAsync<T>(stream, data, _jsonOptions, cancellationToken)
+            await JsonSerializer.SerializeAsync(stream, data, _jsonOptions, cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        public async Task<T> DeserializeAsync(string filePath, CancellationToken cancellationToken = default)
+        public async Task<T?> DeserializeAsync(string filePath, CancellationToken cancellationToken = default)
         {
             using var stream = File.OpenRead(filePath);
             return await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, cancellationToken)

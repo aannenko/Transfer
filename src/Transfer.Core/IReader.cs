@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace Transfer.Core;
 
-namespace Transfer.Core
+public interface IReader
 {
-    public interface IReader
-    {
-        Task<StreamInfo> GetSourceStreamInfoAsync();
-    }
+    Task<StreamInfo> GetSourceStreamInfoAsync();
 }

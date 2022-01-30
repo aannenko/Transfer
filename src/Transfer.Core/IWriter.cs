@@ -1,10 +1,6 @@
-using System.IO;
-using System.Threading.Tasks;
+namespace Transfer.Core;
 
-namespace Transfer.Core
+public interface IWriter
 {
-    public interface IWriter
-    {
-        Task<Stream> GetDestinationStreamAsync();
-    }
+    Task<Stream> GetDestinationStreamAsync();
 }
